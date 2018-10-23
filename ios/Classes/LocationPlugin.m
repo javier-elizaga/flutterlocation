@@ -17,7 +17,7 @@
 +(void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
     FlutterMethodChannel *channel = [FlutterMethodChannel methodChannelWithName:@"lyokone/location" binaryMessenger:registrar.messenger];
     FlutterEventChannel *stream = [FlutterEventChannel eventChannelWithName:@"lyokone/locationstream" binaryMessenger:registrar.messenger];
-
+    
     LocationPlugin *instance = [[LocationPlugin alloc] init];
     [registrar addMethodCallDelegate:instance channel:channel];
     [stream setStreamHandler:instance];
@@ -25,16 +25,16 @@
 
 -(instancetype)init {
     self = [super init];
-
+    
     if (self) {
         self.locationWanted = NO;
         self.flutterListening = NO;
         self.hasInit = NO;
-  
+        
     }
     return self;
 }
-    
+
 -(void)initLocation {
     if (!(self.hasInit)) {
         self.hasInit = YES;
@@ -64,8 +64,8 @@
         {
             // Location services are requested but user has denied
             result([FlutterError errorWithCode:@"PERMISSION_DENIED"
-                                   message:@"The user explicitly denied the use of location services for this app or location services are currently disabled in Settings."
-                                   details:nil]);
+                                       message:@"The user explicitly denied the use of location services for this app or location services are currently disabled in Settings."
+                                       details:nil]);
             return;
         }
         
@@ -76,13 +76,14 @@
         NSLog(@"Do has permissions");
         if ([CLLocationManager locationServicesEnabled]) {
             
-            if ([CLLocationManager authorizationStatus] == kCLAuthorizationStatusDenied)
+            if ([CLLocationManager authorizationStatus] == kCLAuthorizationStatusAuthorizedWhenInUse ||
+                [CLLocationManager authorizationStatus] == kCLAuthorizationStatusAuthorizedAlways)
             {
                 // Location services are requested but user has denied
-                result(@(0));
+                result(@(1));
             } else {
                 // Location services are available
-                result(@(1));
+                result(@(0));
             }
             
             
@@ -90,7 +91,7 @@
             // Location is not yet available
             result(@(0));
         }
-//
+        //
     } else {
         result(FlutterMethodNotImplemented);
     }
@@ -111,14 +112,14 @@
 -(void)locationManager:(CLLocationManager*)manager didUpdateLocations:(NSArray<CLLocation*>*)locations {
     CLLocation *location = locations.firstObject;
     NSDictionary<NSString*,NSNumber*>* coordinatesDict = @{
-                                                          @"latitude": @(location.coordinate.latitude),
-                                                          @"longitude": @(location.coordinate.longitude),
-                                                          @"accuracy": @(location.horizontalAccuracy),
-                                                          @"altitude": @(location.altitude),
-                                                          @"speed": @(location.speed),
-                                                          @"speed_accuracy": @(0.0),
-                                                          };
-
+                                                           @"latitude": @(location.coordinate.latitude),
+                                                           @"longitude": @(location.coordinate.longitude),
+                                                           @"accuracy": @(location.horizontalAccuracy),
+                                                           @"altitude": @(location.altitude),
+                                                           @"speed": @(location.speed),
+                                                           @"speed_accuracy": @(0.0),
+                                                           };
+    
     if (self.locationWanted) {
         self.locationWanted = NO;
         self.flutterResult(coordinatesDict);
